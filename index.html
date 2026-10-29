@@ -76,14 +76,8 @@ input:focus,select:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px 
 #gate h2{margin:0 0 6px;font-size:20px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:99px;font-weight:600;font-size:14px;transition:transform .45s cubic-bezier(.3,1.4,.5,1);z-index:20}
 .toast.show{transform:translate(-50%,0)}
-.hand{display:none;gap:2px;background:var(--soft);padding:3px;border-radius:99px;align-items:center}
-.hand span{font-size:10px;font-weight:700;color:var(--mut);padding:0 6px 0 8px;text-transform:uppercase;letter-spacing:.05em}
-.hand button{border:0;background:none;color:var(--mut);font:700 12px inherit;width:32px;height:32px;border-radius:50%;cursor:pointer;transition:all .25s}
-.hand button.on{background:var(--solid);color:var(--acc);box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.lh .seg button[data-t="0"]{order:3}.lh .seg button[data-t="2"]{order:1}
-.lh .bk button{float:left;margin-right:10px}
 @media(max-width:899px){
- .hand{display:flex}.who{display:none}
+ .who{display:none}
  header{padding:10px 14px}
  main{padding:12px 12px calc(110px + env(safe-area-inset-bottom,0px))}
  .card{padding:14px}
@@ -102,7 +96,7 @@ input:focus,select:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px 
 .so{border:1px solid var(--line);background:var(--solid);color:var(--ink);font:600 12px inherit;padding:8px 14px;border-radius:99px;cursor:pointer;transition:all .2s;flex:none}
 .so:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
 .hdr-r{display:flex;align-items:center;gap:8px;min-width:0}
-@media(max-width:480px){.hand span,.brand small{display:none}.so{padding:8px 12px}}
+@media(max-width:480px){.brand small{display:none}.so{padding:8px 12px}}
 .av{display:block}.avt{display:flex;align-items:center;gap:10px}
 .bar{position:relative;height:8px;border-radius:99px;background:var(--soft);margin-top:9px;overflow:hidden}
 .bar u{position:absolute;top:0;bottom:0;border-radius:99px;background:var(--c);text-decoration:none}
@@ -124,12 +118,11 @@ input:focus,select:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px 
 .ub{height:8px;border-radius:99px;background:var(--c);width:var(--w);transition:width .6s;margin:4px 0 10px}
 .day.blk{background:repeating-linear-gradient(45deg,var(--solid) 0 6px,var(--soft) 6px 12px)}
 .hint{font-size:11px;color:var(--mut);margin-top:6px}
-.lh .acts{flex-direction:row-reverse;justify-content:flex-end}
 .ghost{margin-top:8px;width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;background:none;color:var(--ink);font:600 14px inherit;cursor:pointer}
 .hide{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
-<header><div class="brand"><div class="logo">&#128197;</div><div>NMAMIT Bookings<small>Halls, labs &amp; grounds</small></div></div><div class="hdr-r"><div class="hand" id="hand" role="group" aria-label="Handedness layout"><span>Hand</span><button data-h="L" aria-label="Left-handed layout">L</button><button data-h="R" aria-label="Right-handed layout" class="on">R</button></div><div class="who hide" id="who"></div><button class="so hide" id="adm">Admin</button><button class="so hide" id="so">Sign out</button></div></header>
+<header><div class="brand"><div class="logo">&#128197;</div><div>NMAMIT Bookings<small>Halls, labs &amp; grounds</small></div></div><div class="hdr-r"><div class="who hide" id="who"></div><button class="so hide" id="adm">Admin</button><button class="so hide" id="so">Sign out</button></div></header>
 <div class="banner hide" id="banner"></div>
 
 <div id="gate" class="card hide">
@@ -137,10 +130,11 @@ input:focus,select:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px 
  <h2>Welcome</h2>
  <div class="mini" id="role"><button data-r="s" class="on">Student</button><button data-r="a">Admin</button></div>
  <div id="gs"><p class="empty" style="padding:0 0 10px">Sign in with your <b>@nmamit.in</b> or <b>@nitte.in</b> email to book venues.</p>
- <input id="em" type="email" placeholder="name@nmamit.in"></div>
+ <input id="em" type="email" placeholder="name@nmamit.in">
+ <div id="gotp" class="hide"><input id="otp" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code" style="margin-top:8px"><div class="hint" id="otphint"></div><button class="ghost" id="resend" type="button">Use a different email</button></div></div>
  <div id="ga" class="hide"><p class="empty" style="padding:0 0 10px">Enter the admin password to approve bookings and manage venues.</p>
  <input id="pw" type="password" placeholder="Admin password" autocomplete="off"></div>
- <button class="go" id="gbtn">Continue</button><div class="msg" id="gmsg"></div>
+ <button class="go" id="gbtn">Send code</button><div class="msg" id="gmsg"></div>
 </div>
 
 <main id="app" class="hide">
@@ -186,47 +180,67 @@ function esc(t){const d=document.createElement("div");d.textContent=t;return d.i
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2800)}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const bks=()=>Object.entries(S.bookings).map(([id,b])=>({id,...b}));
-function st(b){if(!b.v)return"approved";const d=S.decisions[b.id];return d&&d.rev===(b.rev||0)?d.s:"pending"}
+function st(b){return b.status||"pending"}
 const live=b=>st(b)!=="rejected";
 const blocked=(v,d)=>Object.values(S.blocks).find(x=>x.date===d&&(x.venue==="All"||x.venue===v));
-async function put(c,id,data){if(local)S[c][id]=data;else await cols[c].doc(id).set(data)}
-async function del(c,id){if(local)delete S[c][id];else await cols[c].doc(id).delete()}
-
+const API="https://script.google.com/macros/s/AKfycbxiQAeyfhxZJngRyaoHMWKR1fZbDM_4BjcpGxPJZwFpi8l6kJJFsH5Azj7E1PuKqGIAZg/exec";
+let pw="",tok="",poll=null,otpStage=false;
+async function api(action,data){
+  let r;
+  try{r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...data,action,email:me.email,password:pw,token:tok})})}
+  catch(e){throw new Error("Cannot reach the server. Check your internet connection.")}
+  let j;try{j=await r.json()}catch(e){throw new Error("The server sent an unexpected reply.")}
+  if(!j.ok)throw new Error(j.error||"Request failed.");return j}
+function apply(j){admin=!!j.admin;S.bookings=Object.fromEntries(j.bookings.map(b=>[b.id,b]));S.blocks=Object.fromEntries(j.blocks.map(k=>[k.id,k]));$("adm").classList.toggle("hide",!admin);render()}
+async function refresh(){try{apply(await api("list",{}))}catch(e){if(/Session expired/.test(e.message)){doSignOut();$("gmsg").textContent=e.message}else toast(e.message)}}
+function showGate(){clearInterval(poll);["app","who","so","adm","modal"].forEach(i=>$(i).classList.add("hide"));$("gate").classList.remove("hide")}
+function begin(){$("gate").classList.add("hide");$("app").classList.remove("hide");$("so").classList.remove("hide");$("adm").classList.toggle("hide",!admin);$("who").textContent=admin?"Admin":me.email;$("who").classList.remove("hide");render();clearInterval(poll);poll=setInterval(refresh,15000)}
+let role="s";
+const gbLabel=()=>role==="a"?"Continue":otpStage?"Verify and continue":"Send code";
+$("role").querySelectorAll("button").forEach(b=>b.onclick=()=>{role=b.dataset.r;$("role").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));$("gs").classList.toggle("hide",role!=="s");$("ga").classList.toggle("hide",role!=="a");$("gmsg").textContent="";$("gbtn").textContent=gbLabel()});
+async function signIn(kind,secret){
+  const pe=me.email,pp=pw,pt=tok;
+  if(kind==="a"){pw=secret;tok="";me.email="admin@nmamit.in"}
+  try{const j=await api("list",{});apply(j);
+    try{if(kind==="a"){sessionStorage.setItem("pw",secret);localStorage.removeItem("tok")}else{localStorage.setItem("tok",tok);localStorage.setItem("email",me.email);sessionStorage.removeItem("pw")}}catch(e){}
+    begin();return true}
+  catch(e){me.email=pe;pw=pp;tok=pt;$("gmsg").textContent=e.message;return false}
+}
+$("gbtn").onclick=async()=>{
+  const btn=$("gbtn");$("gmsg").textContent="";btn.disabled=true;
+  try{
+    if(role==="a"){btn.textContent="Checking...";await signIn("a",$("pw").value)}
+    else if(!otpStage){
+      btn.textContent="Sending code...";me.email=$("em").value.trim().toLowerCase();pw="";tok="";
+      await api("sendotp",{});otpStage=true;$("gotp").classList.remove("hide");$("em").disabled=true;
+      $("otphint").textContent="We emailed a 6-digit code to "+me.email+". It is valid for 10 minutes. Check your spam folder too.";$("otp").focus()}
+    else{btn.textContent="Verifying...";const j=await api("verify",{code:$("otp").value.trim()});tok=j.token;await signIn("t","")}
+  }catch(e){$("gmsg").textContent=e.message}
+  btn.disabled=false;btn.textContent=gbLabel()};
+$("resend").onclick=()=>{otpStage=false;$("gotp").classList.add("hide");$("em").disabled=false;$("otp").value="";$("gmsg").textContent="";$("gbtn").textContent=gbLabel()};
+function doSignOut(){
+  if(tok)api("signout",{}).catch(()=>{});
+  pw="";tok="";me.email="";admin=false;S.bookings={};S.blocks={};
+  try{localStorage.removeItem("email");localStorage.removeItem("tok");sessionStorage.removeItem("pw")}catch(e){}
+  $("em").value="";$("pw").value="";$("otp").value="";otpStage=false;$("gotp").classList.add("hide");$("em").disabled=false;$("gbtn").textContent=gbLabel();
+  showGate();setTab(0);window.scrollTo(0,0)}
+$("so").onclick=doSignOut;
 async function init(){
   $("venue").innerHTML=VENUES.map(v=>`<option>${v[0]}</option>`).join("");$("date").value=sel;
-  try{
-    const user=await claude.use("user"),db=await claude.use("db");
-    if(user){const m=await user.me();me.id=m.id;me.email=m.email||"";}
-    if(db)["bookings","decisions","blocks"].forEach(c=>{cols[c]=db.collection(c);cols[c].onSnapshot(sn=>{S[c]=Object.fromEntries(sn.docs.map(d=>[d.id,d.data()]));render()},()=>{})});
-    dlc=await claude.use("downloads");
-  }catch(e){}
-  if(!cols.bookings){local=true;$("banner").textContent="Preview mode: bookings are not shared until this page is opened with sharing enabled.";$("banner").classList.remove("hide")}
-  me.id=me.id||"local";
-  try{if(sessionStorage.getItem("adm")==="1"){admin=true;me.email="admin"}}catch(e){}
-  if(!OK.test(me.email)&&!admin){try{const t=localStorage.getItem("email")||"";if(OK.test(t))me.email=t}catch(e){}}
-  if(admin||OK.test(me.email)){begin()}else{$("gate").classList.remove("hide");if(me.email)$("gmsg").textContent="Signed in as "+me.email+", which is not an NMAMIT/NITTE address."}
+  let sp="",st0="",se="";try{sp=sessionStorage.getItem("pw")||"";st0=localStorage.getItem("tok")||"";se=localStorage.getItem("email")||""}catch(e){}
+  if(sp){if(await signIn("a",sp))return}
+  else if(st0&&OK.test(se)){tok=st0;me.email=se;if(await signIn("t",""))return}
+  showGate();
 }
-let role="s";
-$("role").querySelectorAll("button").forEach(b=>b.onclick=()=>{role=b.dataset.r;$("role").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));$("gs").classList.toggle("hide",role!=="s");$("ga").classList.toggle("hide",role!=="a");$("gmsg").textContent=""});
-async function sha(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
-$("gbtn").onclick=async()=>{
-  if(role==="a"){let ok=false;try{ok=(await sha($("pw").value))==="2e46c3cbb66fa96b8b33c46bc8e1011ab9c9a3f84f52dc40300c6820af1cf622"}catch(e){}
-    if(!ok){$("gmsg").textContent="Incorrect admin password.";return}
-    admin=true;me.email="admin";try{sessionStorage.setItem("adm","1")}catch(e){}$("pw").value="";$("gate").classList.add("hide");begin();return}
-  const v=$("em").value.trim();if(!OK.test(v)){$("gmsg").textContent="Please use an @nmamit.in or @nitte.in address.";return}
-  admin=false;me.email=v;try{localStorage.setItem("email",v)}catch(e){}$("gate").classList.add("hide");begin()};
-function begin(){$("app").classList.remove("hide");$("so").classList.remove("hide");if(admin)$("adm").classList.remove("hide");$("who").textContent=admin?"Admin":me.email;$("who").classList.remove("hide");render()}
-$("so").onclick=()=>{me.email="";admin=false;try{localStorage.removeItem("email");sessionStorage.removeItem("adm")}catch(e){}
-  ["app","who","so","adm","modal"].forEach(i=>$(i).classList.add("hide"));$("em").value="";$("gmsg").textContent="";$("gate").classList.remove("hide");setTab(0);window.scrollTo(0,0)};
 
 function setTab(n){tab=n;[0,1,2].forEach(i=>{$("p"+i).classList.toggle("hide",i!==n);if(i===n){$("p"+i).style.animation="none";void $("p"+i).offsetWidth;$("p"+i).style.animation=""}});
-  $("seg").querySelectorAll("button").forEach((b,i)=>b.classList.toggle("on",i===n));const vi=hand==="L"?2-n:n;$("pill").style.transform=`translateX(calc(${vi*100}% + ${vi*4}px))`}
+  $("seg").querySelectorAll("button").forEach((b,i)=>b.classList.toggle("on",i===n));const vi=n;$("pill").style.transform=`translateX(calc(${vi*100}% + ${vi*4}px))`}
 $("seg").querySelectorAll("button").forEach(b=>b.onclick=()=>setTab(+b.dataset.t));
 $("mini").querySelectorAll("button").forEach(b=>b.onclick=()=>{mine=+b.dataset.m;$("mini").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));render()});
 
 const vis=()=>bks().filter(b=>live(b)&&(filter==="All"||b.venue===filter));
 function card(b,i,showDate){
-  const s=st(b),own=b.by===me.id,a=[];
+  const s=st(b),own=b.own,a=[];
   if(own)a.push(`<button data-a="edit" data-id="${b.id}">Edit</button>`);
   if(own&&s==="approved")a.push(`<button data-a="ics" data-id="${b.id}">Add to calendar</button>`);
   if(admin&&s==="pending")a.push(`<button class="ok" data-a="ok" data-id="${b.id}">Approve</button><button data-a="no" data-id="${b.id}">Reject</button>`);
@@ -256,8 +270,8 @@ function render(){
   $("avail").innerHTML=VENUES.map((v,i)=>{const bs=dayAll.filter(b=>b.venue===v[0]),k=blocked(v[0],sel);
     return `<button class="av" style="--i:${i}" data-v="${v[0]}"><div class="avt"><i style="background:${v[1]}"></i><span class="n"><b>${v[0]}</b><span class="t">${k?esc(k.reason||"Not available"):bs.length?bs.map(b=>b.start+"–"+b.end).join(", "):"Available all day"}</span></span><span class="tag ${k?"b":bs.length?"p":"f"}">${k?"Blocked":bs.length?"Partly booked":"Free"}</span></div><div class="bar">${k?'<u class="blk"></u>':bs.map(b=>seg(b,v[1])).join("")}</div></button>`}).join("");
   $("avail").querySelectorAll(".av").forEach(b=>b.onclick=()=>{if(!editId)$("venue").value=b.dataset.v;setTab(2);$("title").focus()});
-  const show=b=>live(b)||b.by===me.id||admin;
-  const L=(mine?bks().filter(b=>b.by===me.id).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)):bks().filter(b=>b.date===sel&&(filter==="All"||b.venue===filter)&&show(b)).sort((a,b)=>a.start.localeCompare(b.start)));
+  const show=b=>live(b)||b.own||admin;
+  const L=(mine?bks().filter(b=>b.own).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)):bks().filter(b=>b.date===sel&&(filter==="All"||b.venue===filter)&&show(b)).sort((a,b)=>a.start.localeCompare(b.start)));
   $("list").innerHTML=L.length?L.map((b,i)=>card(b,i,mine)).join(""):`<div class="empty"><big>${mine?"📋":"🎉"}</big>${mine?"You have no bookings yet.":"Nothing booked"+(filter!=="All"?" at "+filter:"")+" on this day."}</div>`;
   if(!$("modal").classList.contains("hide"))renderAdmin();
 }
@@ -272,15 +286,14 @@ function startEdit(id){const b=S.bookings[id];editId=id;
 function resetForm(){editId=null;["title","notes"].forEach(i=>$(i).value="");$("rep").disabled=false;$("rep").value=1;$("book").textContent="Request booking";$("cedit").classList.add("hide")}
 $("cedit").onclick=()=>{resetForm();setTab(1)};
 async function act(a,id){
-  const b=S.bookings[id];
   try{
     if(a==="edit")return startEdit(id);
-    if(a==="ics"){if(!dlc)return toast("Calendar download isn't available here");await dlc.save({filename:"booking-"+b.date+".ics",data:ics({id,...b})});return}
-    if(a==="cancel"){await del("bookings",id);if(admin&&S.decisions[id])await del("decisions",id);toast("Booking cancelled")}
-    if(a==="ok"||a==="no"){await put("decisions",id,{s:a==="ok"?"approved":"rejected",rev:b.rev||0});toast(a==="ok"?"Approved ✓":"Rejected")}
-    if(a==="unblock"){await del("blocks",id);toast("Block removed")}
-  }catch(e){toast("That didn't work. You may not have permission.")}
-  render();
+    if(a==="ics"){const b=S.bookings[id],l=document.createElement("a");l.href=URL.createObjectURL(new Blob([ics({id,...b})],{type:"text/calendar"}));l.download="booking-"+b.date+".ics";l.click();return}
+    if(a==="cancel"){await api("cancel",{id});toast("Booking cancelled")}
+    if(a==="ok"||a==="no"){await api("decide",{id,status:a==="ok"?"approved":"rejected"});toast(a==="ok"?"Approved ✓":"Rejected")}
+    if(a==="unblock"){await api("unblock",{id});toast("Block removed")}
+    await refresh()
+  }catch(e){toast(e.message);if(/Session expired/.test(e.message))doSignOut()}
 }
 [$("list"),$("mbody")].forEach(el=>el.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(t)act(t.dataset.a,t.dataset.id)}));
 
@@ -292,39 +305,28 @@ function renderAdmin(){
   <h3>Block a date (exams, maintenance)</h3><div class="row"><select id="bv"><option>All</option>${VENUES.map(v=>`<option>${v[0]}</option>`).join("")}</select><input id="bd" type="date"></div><input id="br" maxlength="50" placeholder="Reason" style="margin-top:8px"><button class="go" id="bblock">Block date</button>
   ${bl.map(x=>`<div class="bk" style="--c:#888"><div class="bkh"><b>${esc(x.venue)} · ${x.date}</b></div><span>${esc(x.reason||"")}</span><div class="acts"><button data-a="unblock" data-id="${x.id}">Remove</button></div></div>`).join("")}
   <h3>Usage (approved bookings)</h3>${VENUES.map(v=>{const n=ok.filter(b=>b.venue===v[0]).length;return `<div style="font-size:12px;display:flex;justify-content:space-between"><span>${v[0]}</span><b>${n}</b></div><div class="ub" style="--c:${v[1]};--w:${n/mx*100}%"></div>`}).join("")}`;
-  const bb=$("bblock");if(bb)bb.onclick=async()=>{const d=$("bd").value;if(!d)return toast("Pick a date to block");try{await put("blocks","k"+uid(),{venue:$("bv").value,date:d,reason:$("br").value.trim()});toast("Date blocked");render()}catch(e){toast("That didn't work. You may not have permission.")}};
+  const bb=$("bblock");if(bb)bb.onclick=async()=>{const d=$("bd").value;if(!d)return toast("Pick a date to block");try{await api("block",{venue:$("bv").value,date:d,reason:$("br").value.trim()});toast("Date blocked");await refresh()}catch(e){toast(e.message)}};
 }
 $("adm").onclick=()=>{renderAdmin();$("modal").classList.remove("hide")};
 $("mclose").onclick=()=>$("modal").classList.add("hide");
 
 $("book").onclick=async()=>{
-  const f={venue:$("venue").value,title:$("title").value.trim(),org:$("org").value.trim(),date:$("date").value,start:$("s").value,end:$("e").value,att:+$("att").value||0,phone:$("phone").value.trim(),notes:$("notes").value.trim()};
-  const say=t=>{$("msg").textContent=t;return t};say("");
+  const f={venue:$("venue").value,title:$("title").value.trim(),org:$("org").value.trim(),date:$("date").value,start:$("s").value,end:$("e").value,att:$("att").value,phone:$("phone").value.trim(),notes:$("notes").value.trim()};
+  const say=t=>{$("msg").textContent=t};say("");
   if(!f.title||!f.date)return say("Add an event title and date.");
   if(f.end<=f.start)return say("End time must be after start time.");
-  if(f.date<iso(new Date()))return say("That date has already passed.");
-  if(!admin&&(f.start<OPEN||f.end>CLOSE))return say("Venues can be booked between 8 AM and 8 PM only.");
-  if(!admin&&tm(f.end)-tm(f.start)>MAXH*60)return say("A single booking can be at most "+MAXH+" hours.");
-  const n=editId?1:Math.min(12,Math.max(1,+$("rep").value||1)),dates=[];
-  for(let i=0;i<n;i++){const d=new Date(f.date+"T00:00");d.setDate(d.getDate()+7*i);dates.push(iso(d))}
-  for(const dt of dates){
-    const k=!admin&&blocked(f.venue,dt);if(k)return say(`${dt}: ${f.venue} is unavailable${k.reason?" ("+k.reason+")":""}.`);
-    const c=bks().find(x=>x.id!==editId&&live(x)&&x.venue===f.venue&&x.date===dt&&f.start<x.end&&x.start<f.end);
-    if(c)return say(`Clash on ${dt}: ${c.venue} is taken ${c.start}–${c.end} by “${c.title}”.`);
-  }
+  const n=editId?1:Math.min(12,Math.max(1,+$("rep").value||1)),editing=!!editId;
+  $("book").disabled=true;
   try{
-    const grp=uid();
-    if(editId){const o=S.bookings[editId],rev=(o.rev||0)+1;await put("bookings",editId,{...o,...f,rev,v:2});if(admin)await put("decisions",editId,{s:"approved",rev})}
-    else for(const dt of dates){const id="b"+uid();await put("bookings",id,{...f,date:dt,by:me.id,email:me.email,rev:0,v:2,grp});if(admin)await put("decisions",id,{s:"approved",rev:0})}
-    toast(editId?(admin?"Changes saved ✓":"Changes saved. Awaiting approval ✓"):admin?"Booked ✓":"Request sent"+(n>1?" for "+n+" weeks":"")+". Awaiting approval ✓");
-    sel=f.date;view=new Date(f.date+"T00:00");resetForm();mine=0;render();setTab(1);
-  }catch(e){say("Could not save the booking. Please try again.")}
+    if(editing)await api("update",{...f,id:editId});else await api("create",{...f,weeks:n});
+    toast(editing?(admin?"Changes saved ✓":"Changes saved. Awaiting approval ✓"):admin?"Booked ✓":"Request sent"+(n>1?" for "+n+" weeks":"")+". Awaiting approval ✓");
+    sel=f.date;view=new Date(f.date+"T00:00");resetForm();mine=0;await refresh();setTab(1);
+  }catch(e){say(e.message);if(/Session expired/.test(e.message))doSignOut()}
+  $("book").disabled=false;
 };
 
-function setHand(h,say){hand=h;document.body.classList.toggle("lh",h==="L");$("hand").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.h===h));try{localStorage.setItem("hand",h)}catch(e){}setTab(tab);if(say)toast(h==="L"?"Left-handed layout on":"Right-handed layout on")}
-$("hand").querySelectorAll("button").forEach(b=>b.onclick=()=>setHand(b.dataset.h,true));
 let tx=null;const gr=$("grid");
 gr.addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});
 gr.addEventListener("touchend",e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>60){dir=dx<0?"sr":"sl";view.setMonth(view.getMonth()+(dx<0?1:-1));render()}},{passive:true});
-setHand(hand,false);init();
+init();
 </script></body></html>
